@@ -1,3 +1,10 @@
+
+name: cd
+
+on:
+  push:
+    branches: [main]
+
 jobs:
   Deploy:
     name: Deploy
@@ -24,7 +31,19 @@ jobs:
           go install github.com/pressly/goose/v3/cmd/goose@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      # Keep your existing build and authentication steps here.
+      - name: Build production binary
+        run: ./scripts/buildprod.sh
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/865942619312/locations/global/workloadIdentityPools/github/providers/my-repo
+          service_account: cloud-run-deployer@able-handbook-513814-v8.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: able-handbook-513814-v8
 
       - name: Build and push Docker image
         run: gcloud builds submit --tag us-central1-docker.pkg.dev/able-handbook-513814-v8/notely-ar-repo/notely:latest .
